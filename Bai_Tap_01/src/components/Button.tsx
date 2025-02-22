@@ -1,11 +1,16 @@
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
 
-const Button = () => {
+type ButtonProps = {
+  label?: string;
+  onPress?: () => void;
+  containerStyles?: string;
+  children: React.ReactNode;
+};
+
+const Button = (props: ButtonProps) => {
   return (
-    <View>
-      <Text>Button</Text>
-    </View>
+    <View className="bg-blue-400 px-5 py-2 rounded-md">{props.children}</View>
   );
 };
 
