@@ -1,22 +1,45 @@
 import "../../global.css";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { SplashScreen, Stack } from "expo-router";
 import { useFonts } from "expo-font";
-import { Text } from "react-native";
+import { Text, Platform } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-
 import { persistStore } from "redux-persist";
-import rtkStore from "~/infrastructure/redux/store";
+import rtkStore from "~/src/infrastructure/redux/store";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
+import { StatusBar } from "expo-status-bar";
+import { NAV_THEME } from "~/lib/constants";
+import { useColorScheme } from "~/lib/useColorScheme";
+import {
+  Theme,
+  ThemeProvider,
+  DefaultTheme,
+  DarkTheme,
+} from "@react-navigation/native";
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
+export { ErrorBoundary } from "expo-router";
+
 SplashScreen.preventAutoHideAsync();
+
+const LIGHT_THEME: Theme = {
+  ...DefaultTheme,
+  colors: NAV_THEME.light,
+};
+const DARK_THEME: Theme = {
+  ...DarkTheme,
+  colors: NAV_THEME.dark,
+};
+
+const useIsomorphicLayoutEffect =
+  Platform.OS === "web" && typeof window === "undefined"
+    ? React.useEffect
+    : React.useLayoutEffect;
 
 const persistor = persistStore(rtkStore);
 
 const RootLayout = () => {
-  const [fontsLoaded, error] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     "TenorSans-Regular": require("assets/fonts/TenorSans-Regular.ttf"),
     "Poppins-Black": require("assets/fonts/Poppins-Black.ttf"),
     "Poppins-Bold": require("assets/fonts/Poppins-Bold.ttf"),
@@ -29,19 +52,31 @@ const RootLayout = () => {
     "Poppins-Thin": require("assets/fonts/Poppins-Thin.ttf"),
   });
 
-  useEffect(() => {
-    if (error) throw error;
+  const hasMounted = useRef(false);
+  const { colorScheme, isDarkColorScheme } = useColorScheme();
+  const [isColorSchemeLoaded, setIsColorSchemeLoaded] = useState(false);
 
+  useIsomorphicLayoutEffect(() => {
+    if (hasMounted.current) {
+      return;
+    }
+
+    if (Platform.OS === "web") {
+      document.documentElement.classList.add("bg-background");
+    }
+    setIsColorSchemeLoaded(true);
+    hasMounted.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (fontError) throw fontError;
     if (fontsLoaded) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, error]);
+  }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded) {
-    return null;
-  }
-
-  if (!fontsLoaded && !error) {
+  // Render nothing until both fonts and color scheme are loaded
+  if (!fontsLoaded || !isColorSchemeLoaded) {
     return null;
   }
 
@@ -51,13 +86,16 @@ const RootLayout = () => {
         loading={<Text>Loading persisted data... !!!!</Text>}
         persistor={persistor}
       >
-        <SafeAreaProvider>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-            }}
-          ></Stack>
-        </SafeAreaProvider>
+        <ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
+          <StatusBar style={isDarkColorScheme ? "light" : "dark"} />
+          <SafeAreaProvider>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+              }}
+            />
+          </SafeAreaProvider>
+        </ThemeProvider>
       </PersistGate>
     </Provider>
   );
