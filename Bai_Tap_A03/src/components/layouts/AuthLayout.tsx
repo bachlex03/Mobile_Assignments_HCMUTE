@@ -4,10 +4,7 @@ import React from "react";
 const AuthLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <ScrollView>
-      <View>
-        <Text>Auth Layout</Text>
-        {children}
-      </View>
+      <View className="h-screen bg-slate-400">{children}</View>
     </ScrollView>
   );
 };

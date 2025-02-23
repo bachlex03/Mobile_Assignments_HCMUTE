@@ -14,3 +14,13 @@ const loginSchema = z.object({
 export type LoginFormType = z.infer<typeof loginSchema>;
 
 export const loginResolver = zodResolver(loginSchema);
+
+const otpSchema = z.object({
+  otp: z.string().length(6, {
+    message: "OTP must be 6 digits",
+  }),
+});
+
+export type OtpFormType = z.infer<typeof otpSchema>;
+
+export const otpResolver = zodResolver(otpSchema);
