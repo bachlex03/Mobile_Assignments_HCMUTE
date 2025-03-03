@@ -2,17 +2,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 const profileSchema = z.object({
-  email: z.string().email({
-    message: "Email is invalid",
+  profile_firstName: z.string().min(1, {
+    message: "First name is required",
   }),
-  phoneNumber: z
-    .string()
-    .min(9, {
-      message: "Phone number 10 digits",
-    })
-    .regex(/^\d+$/, {
-      message: "Phone number is invalid",
-    }),
+  profile_lastName: z.string().min(1, {
+    message: "Last name is required",
+  }),
 });
 
 export type ProfileFormType = z.infer<typeof profileSchema>;

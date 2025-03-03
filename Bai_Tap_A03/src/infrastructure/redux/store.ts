@@ -18,12 +18,18 @@ import {
 import authSlice from "~/src/infrastructure/redux/slices/auth/auth.slice";
 import { authApi } from "~/src/infrastructure/redux/apis/auth.api";
 import { postsApi } from "~/src/infrastructure/redux/apis/post.api";
+import { userApi } from "~/src/infrastructure/redux/apis/user.api";
 
 const persistConfig: PersistConfig<ReturnType<typeof reducers>> = {
   key: "root",
   version: 1,
   storage: AsyncStorage,
-  blacklist: ["auth", authApi.reducerPath, postsApi.reducerPath],
+  blacklist: [
+    "auth",
+    authApi.reducerPath,
+    postsApi.reducerPath,
+    userApi.reducerPath,
+  ],
   whitelist: [],
 };
 
@@ -41,8 +47,8 @@ export const rtkQueryLoggerMiddleware =
   (api: any) => (next: any) => (action: any) => {
     // RTK Query uses `createAsyncThunk` from redux-toolkit under the hood, so we're able to utilize these matchers!
     if (isRejectedWithValue(action)) {
-      console.log("isRejectedWithValue", action.error, action.payload);
-      alert(JSON.stringify(action)); // This is just an example. You can replace it with your preferred method for displaying notifications.
+      // console.log("isRejectedWithValue", action.error, action.payload);
+      // alert(JSON.stringify(action)); // This is just an example. You can replace it with your preferred method for displaying notifications.
     }
 
     return next(action);
@@ -52,6 +58,7 @@ const reducers = combineReducers({
   auth: authSlice,
   [authApi.reducerPath]: authApi.reducer,
   [postsApi.reducerPath]: postsApi.reducer,
+  [userApi.reducerPath]: userApi.reducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, reducers);
@@ -67,6 +74,7 @@ const reduxStore = configureStore({
       // Add middleware without including them in the blacklist
       authApi.middleware,
       postsApi.middleware,
+      userApi.middleware,
       rtkQueryLoggerMiddleware
     ),
   enhancers: getEnhancers,

@@ -32,14 +32,14 @@ const OtpInput = ({ onOTPComplete }) => {
   };
 
   return (
-    <View className="flex-1 justify-center items-center bg-white p-4">
-      <Text className="text-2xl font-bold mb-6 text-gray-800">Enter OTP</Text>
+    <View className="items-center justify-center flex-1 p-4 bg-white">
+      <Text className="mb-6 text-2xl font-bold text-gray-800">Enter OTP</Text>
       <View className="flex-row justify-between w-4/5 mb-6">
         {otp.map((digit, index) => (
           <TextInput
             key={index}
             ref={(ref) => (inputRefs.current[index] = ref)}
-            className="w-12 h-12 border border-gray-300 rounded-lg text-center text-xl bg-gray-50"
+            className="w-12 h-12 text-xl text-center border border-gray-300 rounded-lg bg-gray-50"
             value={digit}
             onChangeText={(text) => handleChange(text, index)}
             onKeyPress={(e) => handleKeyPress(e, index)}
@@ -50,17 +50,17 @@ const OtpInput = ({ onOTPComplete }) => {
         ))}
       </View>
       <TouchableOpacity
-        className="bg-blue-500 p-3 rounded-lg"
+        className="p-3 bg-blue-500 rounded-lg"
         onPress={() => console.log("Resend OTP pressed")}
       >
-        <Text className="text-white text-base font-semibold">Resend OTP</Text>
+        <Text className="text-base font-semibold text-white">Resend OTP</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        className="bg-white p-3 rounded-lg mt-4"
+        className="p-3 mt-4 bg-white rounded-lg"
         onPress={() => router.back()}
       >
-        <Text className="text-black border-b text-base font-semibold">
+        <Text className="text-base font-semibold text-black border-b">
           Back to profile
         </Text>
       </TouchableOpacity>

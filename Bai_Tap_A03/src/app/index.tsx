@@ -23,7 +23,7 @@ const App = () => {
       >
         <View className="flex items-center justify-center h-full">
           <View className="mb-32">
-            <Text className="text-white text-xl font-semibold font-Poppins-SemiBold">
+            <Text className="text-xl font-semibold text-white font-Poppins-SemiBold">
               On boarding Screen
             </Text>
           </View>

@@ -6,8 +6,9 @@ import {
   TouchableOpacity,
   Button,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
 import { SubmitHandler, useForm } from "react-hook-form";
@@ -16,40 +17,97 @@ import {
   ProfileFormType,
   profileResolver,
 } from "~/src/domain/schemas/profile.schema";
+import {
+  PhoneNumberFormType,
+  phoneNumberResolver,
+} from "~/src/domain/schemas/phone.schema";
 import * as ImagePicker from "expo-image-picker";
-import Modal from "react-native-modal"; // Import Modal if using react-native-modal
+import Modal from "react-native-modal";
+import {
+  useChangePhoneNumberAsyncMutation,
+  useGetUserProfileAsyncQuery,
+} from "~/src/infrastructure/redux/apis/user.api";
+import getQueryParams from "~/src/infrastructure/utils/get-query-params";
+import { createQueryEncodedUrl } from "~/src/infrastructure/utils/query-encoded-url";
 
 const ProfileScreen = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
+  const [isSubmittingPhone, setIsSubmittingPhone] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [image, setImage] = useState<string | null>(
     "https://img.freepik.com/premium-vector/avatar-profile-icon-flat-style-male-user-profile-vector-illustration-isolated-background-man-profile-sign-business-concept_157943-38764.jpg"
   );
-  const [previewImage, setPreviewImage] = useState<string | null>(null); // State for preview image
-  const [isPreviewVisible, setIsPreviewVisible] = useState(false); // State for preview modal visibility
-  const [isLoading, setIsLoading] = useState(false); // Loading state for image picking
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Store original values to compare with current form values, including image
-  const [originalValues, setOriginalValues] = useState({
-    email: "user@gmail.com",
-    phoneNumber: "0816429848",
-    profileImage:
-      "https://img.freepik.com/premium-vector/avatar-profile-icon-flat-style-male-user-profile-vector-illustration-isolated-background-man-profile-sign-business-concept_157943-38764.jpg",
+  const { data: userProfile, refetch: refetchUserProfile } =
+    useGetUserProfileAsyncQuery(undefined);
+
+  const [changePhoneNumber, { isLoading: isChangingPhoneNumber }] =
+    useChangePhoneNumberAsyncMutation();
+
+  // Form for profile (firstName, lastName)
+  const {
+    control: profileControl,
+    handleSubmit: handleProfileSubmit,
+    formState: { errors: profileErrors },
+    reset: resetProfile,
+  } = useForm<ProfileFormType>({
+    resolver: profileResolver,
+    defaultValues: {
+      profile_firstName: "",
+      profile_lastName: "",
+    },
   });
+
+  // Form for phone number
+  const {
+    control: phoneControl,
+    handleSubmit: handlePhoneSubmit,
+    formState: { errors: phoneErrors },
+    reset: resetPhone,
+  } = useForm<PhoneNumberFormType>({
+    resolver: phoneNumberResolver,
+    defaultValues: {
+      phoneNumber: "",
+    },
+  });
+
+  // Populate forms with user profile data when it loads
+  useEffect(() => {
+    if (userProfile?.data) {
+      const {
+        email,
+        profile_phoneNumber,
+        profile_firstName,
+        profile_lastName,
+      } = userProfile.data;
+      resetProfile({
+        profile_firstName: profile_firstName || "",
+        profile_lastName: profile_lastName || "",
+      });
+      resetPhone({
+        phoneNumber: profile_phoneNumber || "",
+      });
+      setImage(userProfile.data.profileImage || image);
+    }
+  }, [userProfile, resetProfile, resetPhone]);
 
   const pickImage = async () => {
     setIsLoading(true);
     try {
       let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
         quality: 1,
       });
 
       if (!result.canceled) {
-        setPreviewImage(result.assets[0].uri); // Set the selected image for preview
-        setIsPreviewVisible(true); // Show preview modal
+        setPreviewImage(result.assets[0].uri);
+        setIsPreviewVisible(true);
       }
     } catch (error) {
       console.log("Error picking image:", error);
@@ -61,111 +119,87 @@ const ProfileScreen = () => {
 
   const confirmImage = () => {
     if (previewImage) {
-      setImage(previewImage); // Set the preview image as the profile image
-      setPreviewImage(null); // Clear preview
-      setIsPreviewVisible(false); // Hide preview modal
+      setImage(previewImage);
+      setPreviewImage(null);
+      setIsPreviewVisible(false);
     }
   };
 
   const cancelImage = () => {
-    setPreviewImage(null); // Clear preview
-    setIsPreviewVisible(false); // Hide preview modal
+    setPreviewImage(null);
+    setIsPreviewVisible(false);
   };
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors, dirtyFields },
-    reset,
-    watch,
-  } = useForm<ProfileFormType>({
-    resolver: profileResolver,
-    defaultValues: {
-      email: "user@gmail.com",
-      phoneNumber: "0333284890",
-    },
-  });
-
-  // Watch current form values to compare with original values
-  const currentValues = watch();
-
-  // Determine if there are changes by comparing currentValues with originalValues
-  const hasChanges = () => {
-    return (
-      currentValues.email !== originalValues.email ||
-      currentValues.phoneNumber !== originalValues.phoneNumber ||
-      (image && image !== originalValues.profileImage) // Check if image has changed
-    );
-  };
-
-  const onSubmit: SubmitHandler<ProfileFormType> = async (
-    data: ProfileFormType
-  ) => {
-    setIsSubmitting(true);
+  const onProfileSubmit: SubmitHandler<ProfileFormType> = async (data) => {
+    setIsSubmittingProfile(true);
     try {
-      // Create FormData to send image and form data
-      const formData = new FormData();
-
-      // Add text fields (email and phoneNumber)
-      formData.append("email", data.email);
-      formData.append("phoneNumber", data.phoneNumber);
-
-      // Add image if it exists and has changed
-      if (image && image !== originalValues.profileImage) {
-        const fileName = image.split("/").pop() || "profile.jpg";
-        const fileType = "image/jpeg"; // Adjust based on your image type (e.g., 'image/png')
-        formData.append("profileImage", {
-          uri: image,
-          name: fileName,
-          type: fileType,
-        } as any); // Type assertion for FormData compatibility
-      }
-
-      // Send request to server
-      const response = await fetch("https://your-api-endpoint/update-profile", {
-        // Replace with your server URL
-        method: "POST",
-        body: formData,
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      console.log("Submitting profile data:", {
+        profile_firstName: data.profile_firstName,
+        profile_lastName: data.profile_lastName,
+        ...(image && { profileImage: image }),
       });
 
-      const result = await response.json();
-      if (response.ok) {
-        alert("Profile updated successfully");
-        console.log(result);
+      // Your API call for profile update goes here, e.g.:
+      // await yourApiUpdateProfile({
+      //   profile_firstName: data.profile_firstName,
+      //   profile_lastName: data.profile_lastName,
+      //   ...(image && { profileImage: image }),
+      // });
 
-        // Update original values after successful submission, including image
-        setOriginalValues({
-          email: data.email,
-          phoneNumber: data.phoneNumber,
-          profileImage: image || originalValues.profileImage, // Update with new image if changed
-        });
-      } else {
-        throw new Error(result.message || "Failed to update profile");
-      }
+      alert("Profile updated successfully (mock)");
+      refetchUserProfile();
     } catch (error) {
       alert(`Profile update failed: ${error.message}`);
     } finally {
-      console.log("Profile update done");
-      setIsSubmitting(false);
-      setIsEditing(false);
-      router.push(`/otp?q=asdasd.asdas.das123adsd2&email=${data.email}`);
+      setIsSubmittingProfile(false);
+      setIsEditingProfile(false);
     }
   };
 
-  // Handle cancel action
-  const handleCancel = () => {
-    setIsEditing(false);
-    // Reset form and image to original values
-    reset(originalValues);
-    setImage(originalValues.profileImage);
+  const onPhoneNumberSubmit: SubmitHandler<PhoneNumberFormType> = async (
+    data
+  ) => {
+    setIsSubmittingPhone(true);
+    try {
+      const result = await changePhoneNumber({
+        changedPhoneNumber: data.phoneNumber,
+      });
+
+      if (result?.data?.redirect) {
+        router.push(
+          createQueryEncodedUrl("/otp", getQueryParams(result.data.redirect))
+        );
+      }
+
+      // alert("Phone number updated successfully (mock)");
+      // refetchUserProfile();
+    } catch (error) {
+      alert(`Phone number update failed: ${error.message}`);
+    } finally {
+      setIsSubmittingPhone(false);
+      setIsEditingPhone(false);
+    }
+  };
+
+  const handleProfileCancel = () => {
+    setIsEditingProfile(false);
+    resetProfile({
+      profile_firstName: userProfile?.data?.profile_firstName || "",
+      profile_lastName: userProfile?.data?.profile_lastName || "",
+    });
+    setImage(userProfile?.data?.profileImage || image);
+  };
+
+  const handlePhoneCancel = () => {
+    setIsEditingPhone(false);
+    resetPhone({
+      phoneNumber: userProfile?.data?.profile_phoneNumber || "",
+    });
   };
 
   return (
     <ScrollView>
-      <View className="bg-slate-500 h-screen">
+      <View className="h-screen bg-slate-500">
         <View className="flex items-center justify-center">
           {image && (
             <Image
@@ -176,78 +210,139 @@ const ProfileScreen = () => {
           <Button
             title="Pick an image from camera roll"
             onPress={pickImage}
-            disabled={isLoading}
+            disabled={isLoading || !isEditingProfile}
           />
           {isLoading && <ActivityIndicator size="small" color="#0000ff" />}
         </View>
 
-        <View className="px-5 py-5 mx-5 bg-slate-200 rounded-md mt-10">
-          <Label id="inputLabel" className="">
-            Email
-          </Label>
-          <Input
-            name="email"
-            control={control}
-            error={errors.email}
-            placeholder="email"
-            className=""
-            editable={isEditing}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-
-          {/* Phone number Input */}
+        <View className="px-5 py-5 mx-5 mt-10 rounded-md bg-slate-200">
+          {/* Email (Non-editable) */}
           <View className="mt-2">
-            <Label id="passwordLabel" className="mt-5">
-              Phone number
+            <Label id="emailLabel" className="">
+              Email
+            </Label>
+            <TextInput
+              // name="email"
+              // control={profileControl}
+              value={userProfile?.data?.email || ""}
+              placeholder="email"
+              className=""
+              editable={false}
+            />
+          </View>
+
+          {/* Phone Number */}
+          <View className="flex-row items-center mt-2">
+            <View className="flex-1">
+              <Label id="phoneLabel" className="mt-5">
+                Phone Number
+              </Label>
+              <Input
+                name="phoneNumber"
+                control={phoneControl}
+                error={phoneErrors.phoneNumber}
+                placeholder="phone number"
+                editable={isEditingPhone}
+                className=""
+                keyboardType="numeric"
+              />
+            </View>
+            {!isEditingPhone ? (
+              <TouchableOpacity
+                onPress={() => setIsEditingPhone(true)}
+                className="px-2 py-1 ml-2 bg-gray-500 rounded"
+              >
+                <Text className="text-white">Edit</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+          {isEditingPhone && (
+            <View className="flex-row justify-between mt-4">
+              <TouchableOpacity
+                onPress={handlePhoneCancel}
+                className="bg-red-500 px-2 py-2 rounded-lg w-[48%] disabled:opacity-50"
+                disabled={isSubmittingPhone}
+              >
+                <Text className="text-base font-bold text-center text-white">
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handlePhoneSubmit(onPhoneNumberSubmit)}
+                className={`bg-black px-2 py-2 rounded-lg w-[48%] ${
+                  isSubmittingPhone ? "opacity-50" : ""
+                }`}
+                disabled={isSubmittingPhone}
+              >
+                <Text className="text-base font-bold text-center text-white">
+                  Save
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* First Name */}
+          <View className="mt-2">
+            <Label id="firstNameLabel" className="mt-5">
+              First Name
             </Label>
             <Input
-              name="phoneNumber"
-              control={control}
-              error={errors.phoneNumber}
-              placeholder="phone number"
-              editable={isEditing}
+              name="profile_firstName"
+              control={profileControl}
+              error={profileErrors.profile_firstName}
+              placeholder="First name"
+              editable={isEditingProfile}
               className=""
             />
           </View>
 
-          {isEditing ? (
-            <View className="mt-4 flex-row justify-between">
-              {/* Cancel Button */}
+          {/* Last Name */}
+          <View className="mt-2">
+            <Label id="lastNameLabel" className="mt-5">
+              Last Name
+            </Label>
+            <Input
+              name="profile_lastName"
+              control={profileControl}
+              error={profileErrors.profile_lastName}
+              placeholder="Last name"
+              editable={isEditingProfile}
+              className=""
+            />
+          </View>
+
+          {isEditingProfile ? (
+            <View className="flex-row justify-between mt-4">
               <TouchableOpacity
-                onPress={handleCancel}
+                onPress={handleProfileCancel}
                 className="bg-red-500 px-2 py-4 rounded-lg w-[48%] disabled:opacity-50"
-                disabled={isSubmitting}
+                disabled={isSubmittingProfile}
               >
-                <Text className="text-center text-white font-bold text-xl">
+                <Text className="text-xl font-bold text-center text-white">
                   Cancel
                 </Text>
               </TouchableOpacity>
-
-              {/* Save Button (only shown if there are changes) */}
-              {hasChanges() ? (
-                <TouchableOpacity
-                  onPress={handleSubmit(onSubmit)}
-                  className={`bg-black px-2 py-4 rounded-lg w-[48%] ${
-                    isSubmitting ? "opacity-50" : ""
-                  }`}
-                  disabled={isSubmitting}
-                >
-                  <Text className="text-center text-white font-bold text-xl">
-                    Save
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
+              <TouchableOpacity
+                onPress={handleProfileSubmit(onProfileSubmit)}
+                className={`bg-black px-2 py-4 rounded-lg w-[48%] ${
+                  isSubmittingProfile ? "opacity-50" : ""
+                }`}
+                disabled={isSubmittingProfile}
+              >
+                <Text className="text-xl font-bold text-center text-white">
+                  Save
+                </Text>
+              </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity
-              onPress={() => setIsEditing(true)}
+              onPress={() => setIsEditingProfile(true)}
               className={`bg-black px-2 py-4 rounded-lg w-full mt-4 ${
-                isSubmitting ? "opacity-50" : ""
+                isSubmittingProfile ? "opacity-50" : ""
               }`}
-              disabled={isSubmitting}
+              disabled={isSubmittingProfile}
             >
-              <Text className="text-center text-white font-bold text-xl">
+              <Text className="text-xl font-bold text-center text-white">
                 Edit Profile
               </Text>
             </TouchableOpacity>
@@ -257,7 +352,7 @@ const ProfileScreen = () => {
         {/* Image Preview Modal */}
         <Modal
           isVisible={isPreviewVisible}
-          onBackdropPress={cancelImage} // Close modal by tapping outside
+          onBackdropPress={cancelImage}
           animationIn="slideInUp"
           animationOut="slideOutDown"
           style={{ margin: 0 }}
@@ -269,19 +364,19 @@ const ProfileScreen = () => {
                 className="h-[300px] w-[300px] rounded-lg mb-4"
               />
             )}
-            <Text className="text-lg font-bold mb-4">Preview Image</Text>
+            <Text className="mb-4 text-lg font-bold">Preview Image</Text>
             <View className="flex-row justify-between w-full">
               <TouchableOpacity
                 onPress={cancelImage}
                 className="bg-red-500 px-4 py-2 rounded-lg w-[48%]"
               >
-                <Text className="text-white text-center font-bold">Cancel</Text>
+                <Text className="font-bold text-center text-white">Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={confirmImage}
                 className="bg-green-500 px-4 py-2 rounded-lg w-[48%]"
               >
-                <Text className="text-white text-center font-bold">
+                <Text className="font-bold text-center text-white">
                   Confirm
                 </Text>
               </TouchableOpacity>
