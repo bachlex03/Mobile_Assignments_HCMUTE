@@ -20,8 +20,8 @@ const SignInScreen = () => {
     email: z.string().email({
       message: "Please enter a valid email",
     }),
-    password: z.string().min(1, {
-      message: "Password is required",
+    password: z.string().min(3, {
+      message: "Password must be at least 3 characters",
     }),
   });
 
