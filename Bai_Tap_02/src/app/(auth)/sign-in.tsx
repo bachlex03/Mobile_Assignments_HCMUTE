@@ -8,10 +8,12 @@ import {
 } from "react-native";
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import AuthLayout from "~/components/layouts/AuthLayout";
+import AuthLayout from "~/src/components/layouts/AuthLayout";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 
 const SignInScreen = () => {
   const loginSchema = z.object({
@@ -47,9 +49,14 @@ const SignInScreen = () => {
       setIsSubmitting(true);
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      await AsyncStorage.setItem("accessToken", "bach");
+
       alert("Login success");
-      console.log(data);
       reset(); // Clear form after successful submission
+
+      // Redirect to home screen
+      router.replace("/home");
     } catch (error) {
       alert("Login failed");
     } finally {
@@ -61,7 +68,7 @@ const SignInScreen = () => {
     <SafeAreaView>
       <AuthLayout>
         <View className="flex items-center justify-center h-screen">
-          <Text className="text-white font-Poppins-Bold text-2xl mb-4">
+          <Text className="mb-4 text-2xl text-white font-Poppins-Bold">
             Login screen
           </Text>
 
@@ -74,19 +81,19 @@ const SignInScreen = () => {
                 fieldState: { error },
               }) => (
                 <View>
-                  <Text className="text-black font-TenorSans-Regular text-lg mb-4">
+                  <Text className="mb-4 text-lg text-black font-TenorSans-Regular">
                     Email
                   </Text>
                   <TextInput
                     value={value}
                     onChangeText={onChange} // Changed from onChange
                     onBlur={onBlur}
-                    className="bg-white px-3 py-2 text-lg rounded-md"
+                    className="px-3 text-lg leading-[18px] bg-white rounded-md h-[40px]"
                     autoCapitalize="none"
                     keyboardType="email-address"
                   />
                   {errors.email && (
-                    <Text className="text-red-800 mt-2 text-sm">
+                    <Text className="mt-2 text-sm text-red-800">
                       {errors.email.message}
                     </Text>
                   )}
@@ -104,18 +111,18 @@ const SignInScreen = () => {
                 fieldState: { error },
               }) => (
                 <View>
-                  <Text className="text-black font-TenorSans-Regular text-lg mb-4">
+                  <Text className="mb-4 text-lg text-black font-TenorSans-Regular">
                     Password
                   </Text>
                   <TextInput
                     value={value}
                     onChangeText={onChange} // Changed from onChange
                     onBlur={onBlur}
-                    className="bg-white px-3 py-2 text-lg rounded-md"
+                    className="px-3 py-2 text-lg bg-white rounded-md"
                     secureTextEntry
                   />
                   {errors.password && (
-                    <Text className="text-red-800 mt-2 text-sm">
+                    <Text className="mt-2 text-sm text-red-800">
                       {errors.password.message}
                     </Text>
                   )}
@@ -131,8 +138,8 @@ const SignInScreen = () => {
             }`}
             disabled={isSubmitting}
           >
-            <Text className="text-center text-white font-bold">
-              {isSubmitting ? "Submitting..." : "Submit"}
+            <Text className="py-2 font-bold text-center text-white">
+              {isSubmitting ? "Submitting..." : "Login"}
             </Text>
           </TouchableOpacity>
         </View>

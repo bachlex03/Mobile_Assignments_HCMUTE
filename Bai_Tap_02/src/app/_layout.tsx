@@ -6,7 +6,7 @@ import { Text } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { persistStore } from "redux-persist";
-import rtkStore from "~/infrastructure/redux/store";
+import rtkStore from "~/src/infrastructure/redux/store";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import * as SplashScreen from "expo-splash-screen";
@@ -15,10 +15,10 @@ import * as SplashScreen from "expo-splash-screen";
 SplashScreen.preventAutoHideAsync();
 
 // Set the animation options. This is optional.
-SplashScreen.setOptions({
-  duration: 2000,
-  fade: true,
-});
+// SplashScreen.setOptions({
+//   duration: 2000,
+//   fade: true,
+// });
 
 const persistor = persistStore(rtkStore);
 
@@ -48,6 +48,10 @@ const RootLayout = () => {
     }
   }, [fontsLoaded, error]);
 
+  if (!appIsReady) {
+    return null; // Wait until fonts are loaded and app is ready
+  }
+
   if (!fontsLoaded) {
     return null;
   }
@@ -67,7 +71,9 @@ const RootLayout = () => {
             screenOptions={{
               headerShown: false,
             }}
-          ></Stack>
+          >
+            {/* <Stack.Screen name="index" /> */}
+          </Stack>
         </SafeAreaProvider>
       </PersistGate>
     </Provider>

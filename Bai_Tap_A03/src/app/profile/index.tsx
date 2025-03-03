@@ -31,7 +31,7 @@ const ProfileScreen = () => {
 
   // Store original values to compare with current form values, including image
   const [originalValues, setOriginalValues] = useState({
-    email: "test@gmail.com",
+    email: "user@gmail.com",
     phoneNumber: "0816429848",
     profileImage:
       "https://img.freepik.com/premium-vector/avatar-profile-icon-flat-style-male-user-profile-vector-illustration-isolated-background-man-profile-sign-business-concept_157943-38764.jpg",
@@ -81,8 +81,8 @@ const ProfileScreen = () => {
   } = useForm<ProfileFormType>({
     resolver: profileResolver,
     defaultValues: {
-      email: "test@gmail.com",
-      phoneNumber: "0816429848",
+      email: "user@gmail.com",
+      phoneNumber: "0333284890",
     },
   });
 
