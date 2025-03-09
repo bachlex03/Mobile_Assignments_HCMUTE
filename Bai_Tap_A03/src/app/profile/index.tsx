@@ -26,6 +26,7 @@ import Modal from "react-native-modal";
 import {
   useChangePhoneNumberAsyncMutation,
   useGetUserProfileAsyncQuery,
+  useUpdateUserProfileAsyncMutation,
 } from "~/src/infrastructure/redux/apis/user.api";
 import getQueryParams from "~/src/infrastructure/utils/get-query-params";
 import { createQueryEncodedUrl } from "~/src/infrastructure/utils/query-encoded-url";
@@ -47,6 +48,9 @@ const ProfileScreen = () => {
 
   const [changePhoneNumber, { isLoading: isChangingPhoneNumber }] =
     useChangePhoneNumberAsyncMutation();
+
+  const [updateProfile, { isLoading: isUpdatingProfile }] =
+    useUpdateUserProfileAsyncMutation();
 
   // Form for profile (firstName, lastName)
   const {
@@ -139,14 +143,15 @@ const ProfileScreen = () => {
         ...(image && { profileImage: image }),
       });
 
-      // Your API call for profile update goes here, e.g.:
-      // await yourApiUpdateProfile({
-      //   profile_firstName: data.profile_firstName,
-      //   profile_lastName: data.profile_lastName,
-      //   ...(image && { profileImage: image }),
-      // });
+      const result = await updateProfile({
+        firstName: data.profile_firstName,
+        lastName: data.profile_lastName,
+      });
 
-      alert("Profile updated successfully (mock)");
+      if (result) {
+        alert("Profile updated successfully");
+      }
+
       refetchUserProfile();
     } catch (error) {
       alert(`Profile update failed: ${error.message}`);

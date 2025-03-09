@@ -1,8 +1,8 @@
-import { setAccessToken } from "~/infrastructure/redux/slices/auth/auth.slice";
+import { setAccessToken } from "~/src/infrastructure/redux/slices/auth/auth.slice";
 import {
   loginPayloadType,
   loginResponseType,
-} from "~/infrastructure/types/auth.type";
+} from "~/src/infrastructure/types/auth.type";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const authApi = createApi({

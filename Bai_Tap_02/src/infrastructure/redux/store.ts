@@ -15,9 +15,9 @@ import {
   REGISTER,
   REHYDRATE,
 } from "redux-persist";
-import authSlice from "~/infrastructure/redux/slices/auth/auth.slice";
-import { authApi } from "~/infrastructure/redux/apis/auth.api";
-import { postsApi } from "~/infrastructure/redux/apis/post.api";
+import authSlice from "~/src/infrastructure/redux/slices/auth/auth.slice";
+import { authApi } from "~/src/infrastructure/redux/apis/auth.api";
+import { postsApi } from "~/src/infrastructure/redux/apis/post.api";
 
 const persistConfig: PersistConfig<ReturnType<typeof reducers>> = {
   key: "root",
@@ -41,8 +41,8 @@ export const rtkQueryLoggerMiddleware =
   (api: any) => (next: any) => (action: any) => {
     // RTK Query uses `createAsyncThunk` from redux-toolkit under the hood, so we're able to utilize these matchers!
     if (isRejectedWithValue(action)) {
-      console.log("isRejectedWithValue", action.error, action.payload);
-      alert(JSON.stringify(action)); // This is just an example. You can replace it with your preferred method for displaying notifications.
+      // console.log("isRejectedWithValue", action.error, action.payload);
+      // alert(JSON.stringify(action)); // This is just an example. You can replace it with your preferred method for displaying notifications.
     }
 
     return next(action);
