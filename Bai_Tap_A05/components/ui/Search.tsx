@@ -10,18 +10,19 @@ import {
 } from '~/src/infrastructure/redux/features/app/search.slice';
 
 const Search = () => {
-   const dispatch = useDispatch();
-
    const query = useAppSelector((state) => state.search.query);
+
+   const [searchText, setSearchText] = React.useState(query || '');
+   const dispatch = useDispatch();
 
    return (
       <View className="flex flex-row justify-between p-2 mx-5 border-b border-b-slate-300">
          <TextInput
             placeholder="Search"
-            value={query}
+            value={searchText}
             className="h-10 font-TenorSans-Regular text-wrap w-[230px]"
             onChangeText={(text) => {
-               dispatch(setSearchQuery(text));
+               setSearchText(text);
             }}
          />
 
@@ -30,6 +31,8 @@ const Search = () => {
                className="p-2 rounded-full bg-[#F8F8F8]"
                onPress={() => {
                   dispatch(setSearchQuery(''));
+                  setSearchText('');
+                  dispatch(setSearchOpened(false));
                }}
             >
                <FeatherIcon name="x" size={22} color="#555555" />
@@ -38,7 +41,7 @@ const Search = () => {
             <TouchableOpacity
                className="p-2 rounded-full bg-[#F8F8F8]"
                onPress={() => {
-                  dispatch(setSearchQuery(''));
+                  dispatch(setSearchQuery(searchText));
                   dispatch(setSearchOpened(false));
                }}
             >

@@ -1,8 +1,10 @@
 import { View, Text, Image } from 'react-native';
 import React from 'react';
 import FeatherIcon from 'react-native-vector-icons/Feather';
+import { ProductItemType } from '~/src/infrastructure/types/product.type';
 
 type ProductItemProps = {
+   item: ProductItemType;
    title?: string;
    description?: string;
    price?: number;
@@ -28,7 +30,7 @@ const ProductItem = (props: ProductItemProps) => {
             />
          </View>
          <View className="px-1 mt-1">
-            <Text className="text-lg font-TenorSans-Regular">
+            <Text className="text-base font-TenorSans-Regular">
                {props.title}
             </Text>
             <Text className="text-sm font-TenorSans-Regular">

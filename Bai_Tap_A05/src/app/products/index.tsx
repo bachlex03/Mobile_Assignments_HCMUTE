@@ -8,118 +8,51 @@ import { logger } from "react-native-logs";
 import { ProductItemType } from "~/src/infrastructure/types/product.type";
 import LoadingOverlay from "@components/ui/LoadingOverlay";
 import IoniIcons from "react-native-vector-icons/Ionicons";
-import AppDropdown, { DropdownItem } from "@components/ui/AppDropdown";
+// import AppDropdown, { DropdownItem } from '@components/ui/AppDropdown';
+import AppFilter, { DropdownFilterParams } from "@components/ui/AppFilter";
+import AppFilterVariants, {
+  DropdownFilterVariants,
+} from "@components/ui/AppFilterVariants";
+import { PaginationType } from "~/src/infrastructure/types/base-response.type";
+import { useAppSelector } from "~/src/infrastructure/redux/store";
 
 var log = logger.createLogger();
 
-const brandVariants: DropdownItem[] = [
+const FilterVariants: DropdownFilterVariants[] = [
   {
-    id: "1",
-    content: "gucci",
-  },
-  {
-    id: "2",
-    content: "dior",
-  },
-  {
-    id: "3",
-    content: "prada",
-  },
-];
-const genderVariants: DropdownItem[] = [
-  {
-    id: "1",
-    content: "woman",
-  },
-  {
-    id: "2",
-    content: "man",
-  },
-  {
-    id: "3",
-    content: "unisex",
-  },
-];
-const sizeVariants: DropdownItem[] = [
-  {
-    id: "1",
-    content: "XS",
-  },
-  {
-    id: "2",
-    content: "S",
-  },
-  {
-    id: "3",
-    content: "M",
-  },
-  {
-    id: "4",
-    content: "L",
-  },
-  {
-    id: "5",
-    content: "XL",
-  },
-];
-const colorVariants: DropdownItem[] = [
-  {
-    id: "1",
-    content: "red",
-  },
-  {
-    id: "2",
-    content: "blue",
-  },
-  {
-    id: "3",
-    content: "green",
-  },
-  {
-    id: "4",
-    content: "yellow",
-  },
-];
-
-const filterVariants = [
-  {
-    id: "1",
     name: "brand",
-    dropDownValues: brandVariants,
+    variantValues: ["Prada", "Chanel", "Gucci", "Louis Vuitton"],
   },
   {
-    id: "2",
     name: "gender",
-    dropDownValues: genderVariants,
+    variantValues: ["Woman", "Man", "Unisex"],
   },
   {
-    id: "3",
     name: "sizes",
-    dropDownValues: sizeVariants,
+    variantValues: ["S", "M", "L", "XL"],
   },
   {
-    id: "4",
     name: "colors",
-    dropDownValues: colorVariants,
+    variantValues: ["Red", "Pink", "Yellow", "Brown"],
   },
 ];
 
-const dropdownFilter: DropdownItem[] = [
+const filterQueryParams: DropdownFilterParams[] = [
   {
-    id: "1",
-    content: "brand",
+    name: "brand",
+    queryParam: "_product_brand",
   },
   {
-    id: "2",
-    content: "gender",
+    name: "gender",
+    queryParam: "_product_gender",
   },
   {
-    id: "3",
-    content: "sizes",
+    name: "sizes",
+    queryParam: "_product_sizes",
   },
   {
-    id: "4",
-    content: "colors",
+    name: "colors",
+    queryParam: "_product_colors",
   },
 ];
 
@@ -127,9 +60,18 @@ const ProductScreen = () => {
   const [productsData, setProductsData] = useState<ProductItemType[]>([]);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(4);
+  const [filters, setFilters] = useState<Partial<PaginationType>>({});
   const [totalItems, setTotalItems] = useState<number | null>(null);
-  const [variant, setVariant] = useState<DropdownItem[] | undefined>(undefined); // State for sort dropdown
-  const [filterOption, setFilterOption] = useState<DropdownItem | null>(null); // State for filter dropdown
+
+  const [queryParam, setQueryParam] = useState<DropdownFilterParams | null>(
+    null
+  );
+  const [selectedFilterVariant, setSelectedFilterVariant] =
+    useState<DropdownFilterVariants | null>(null);
+
+  const searchQuery = useAppSelector((state) => state.search.query);
+
+  console.log("filters:", filters);
 
   const {
     data: productsResponse,
@@ -140,6 +82,8 @@ const ProductScreen = () => {
   } = useGetProductsAsyncQuery({
     _page: page,
     _limit: limit,
+    _q: searchQuery ?? "",
+    ...filters,
   });
 
   React.useEffect(() => {
@@ -149,7 +93,20 @@ const ProductScreen = () => {
         setProductsData(productsResponse.data.items);
       } else {
         // Append for pagination
-        setProductsData((prev) => [...prev, ...productsResponse.data.items]);
+        setProductsData((prev) => {
+          const data = Array<ProductItemType>();
+
+          new Map(
+            [...prev, ...productsResponse.data.items].map((item) => [
+              item._id,
+              item,
+            ])
+          ).forEach((value) => {
+            data.push(value);
+          });
+
+          return data;
+        });
       }
       if (productsResponse.data.meta?.totalItems !== undefined) {
         setTotalItems(productsResponse.data.meta.totalItems);
@@ -183,25 +140,59 @@ const ProductScreen = () => {
     [loadMoreProducts]
   );
 
-  // Reset page and refetch when sort/filter changes
-  const handleVariantSelect = (item: DropdownItem | null) => {
-    // console.log(item?.content);
-    // setVariant([item]);
-  };
+  const handleQueryParamsSelect = (item: DropdownFilterParams | null) => {
+    const variant = FilterVariants.find(
+      (variant) => variant.name === item?.name
+    );
 
-  const handleFilterSelect = (item: DropdownItem) => {
-    const variant = filterVariants.find((v) => v.id === item.id);
+    setSelectedFilterVariant(variant || null);
+    setQueryParam(item);
 
-    console.log(variant);
+    //  console.log("Query param:", item);
+    //  console.log("Query filter variant:", variant);
 
-    if (variant) {
-      setVariant(variant.dropDownValues);
+    if (item && variant) {
+      const newFilters = {
+        //   ...filters,
+        [item.queryParam]: variant?.variantValues[0], // e.g., _product_brand: "Gucci"
+      };
+
+      setFilters(newFilters);
+      setPage(1); // Reset to first page
+      setProductsData([]); // Clear current data
+      refetch(); // Fetch with new filters
     } else {
-      setVariant(undefined);
+      // Clear filter if no variant is selected
+      setFilters({});
+      setPage(1);
+      setProductsData([]);
+      refetch();
     }
   };
 
-  console.log("RENDER");
+  // Handle filter variant selection (e.g., "Gucci" or "Woman")
+  const handleQueryVariantSelect = (variantValue: string | null) => {
+    //  console.log("queryParam:", queryParam);
+    //  console.log("selectedFilterVariant:", variantValue);
+
+    if (queryParam && variantValue) {
+      const newFilters = {
+        //   ...filters,
+        [queryParam.queryParam]: variantValue, // e.g., _product_brand: "Gucci"
+      };
+
+      setFilters(newFilters);
+      setPage(1); // Reset to first page
+      // setProductsData([]); // Clear current data
+      refetch(); // Fetch with new filters
+    } else {
+      // Clear filter if no variant is selected
+      setFilters({});
+      setPage(1);
+      // setProductsData([]);
+      refetch();
+    }
+  };
 
   return (
     <ProductLayout onScroll={handleScroll}>
@@ -211,41 +202,41 @@ const ProductScreen = () => {
             {totalItems !== null ? `${totalItems} Results` : "Loading..."}
           </Text>
         </View>
-        <View className="flex flex-row gap-2">
-          <View className="w-[120px] mr-10">
-            <AppDropdown
-              items={variant || []}
-              placeholder={variant ? "Sort" : "Select"}
-              containerStyles="rounded-full mr-5 w-[100px]"
-              textStyles="text-base"
-              iconSize={20}
-              onSelect={handleVariantSelect} // Handle sort selection
+        <View className="flex flex-row items-center justify-center gap-4">
+          <View className="">
+            <AppFilterVariants
+              queryParam={queryParam}
+              variants={selectedFilterVariant}
+              onSelected={handleQueryVariantSelect}
+              containerStyles="w-[150px]"
             />
           </View>
-          <AppDropdown
-            items={dropdownFilter}
-            placeholder="Filter"
-            containerStyles="rounded-full w-[120px]"
-            textStyles="text-base"
-            icon={<IoniIcons name="filter-outline" size={22} color="#DD8560" />}
-            iconSize={20}
-            onSelect={handleFilterSelect} // Handle filter selection
-          />
+
+          <View className="">
+            <AppFilter
+              items={filterQueryParams}
+              icon={
+                <IoniIcons name="filter-outline" size={22} color="#DD8560" />
+              }
+              onSelected={handleQueryParamsSelect}
+            />
+          </View>
         </View>
       </View>
 
       <View>
-        <View className="flex flex-col flex-wrap items-center justify-center w-full gap-6">
+        <View className="flex-col items-center justify-center gap-6">
           {productsData.map((item, index) => (
             <TouchableOpacity
               key={index}
               onPress={() => router.push("/products/lamerei")}
             >
               <ProductItem
-                title="lamerei"
+                item={item}
+                title={item.product_name}
                 description="reversible angora cardigan"
-                price={120}
-                imageUrl="https://res.cloudinary.com/djiju7xcq/image/upload/v1729839380/Sunflower-Jumpsuit-1-690x875_dibawa.webp"
+                price={item.product_price}
+                imageUrl={item.product_imgs[0].secure_url}
               />
             </TouchableOpacity>
           ))}
