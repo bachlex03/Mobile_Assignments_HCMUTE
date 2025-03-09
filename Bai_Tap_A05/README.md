@@ -1,16 +1,8 @@
-# Starter base
+# Bài tập tuần 03 (Bài tập A03)
+- 21110359 - Lê Xuân Bách
 
-A starting point to help you set up your project quickly and use the common components provided by `react-native-reusables`. The idea is to make it easier for you to get started.
+## Results
 
-## Features
-
-- NativeWind v4
-- Dark and light mode
-  - Android Navigation Bar matches mode
-  - Persistent mode
-- Common components
-  - ThemeToggle, Avatar, Button, Card, Progress, Text, Tooltip
-
-<img src="https://github.com/mrzachnugent/react-native-reusables/assets/63797719/42c94108-38a7-498b-9c70-18640420f1bc"
-     alt="starter-base-template"
-     style="width:270px;" />
+![Simulator Screenshot - iPhone 16 - 2025-03-09 at 17 55 38](https://github.com/user-attachments/assets/c90342a6-3a84-4fbc-8cc4-7993122644e6)
+![Simulator Screenshot - iPhone 16 - 2025-03-09 at 17 55 21](https://github.com/user-attachments/assets/9c580b7c-d2cf-49c0-b850-d50d7f709004)
+![Simulator Screenshot - iPhone 16 - 2025-03-09 at 17 55 18](https://github.com/user-attachments/assets/a1e2de5f-f89b-447a-beee-15b96e54cb32)
